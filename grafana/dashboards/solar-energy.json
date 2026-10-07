@@ -1,0 +1,1617 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "description": "Top totals + Daily Production/Consumption follow Time Picker (default: this month). PV / House / Grid Import Day–Week–Month–Year use fixed calendar ranges.",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [
+    {
+      "title": "Overview",
+      "type": "link",
+      "icon": "dashboard",
+      "url": "/d/solar-overview/solar-overview",
+      "includeVars": true,
+      "keepTime": true,
+      "targetBlank": false,
+      "asDropdown": false,
+      "tags": []
+    },
+    {
+      "title": "DeyeCloud",
+      "type": "link",
+      "icon": "dashboard",
+      "url": "/d/solar-deyecloud/solar-deyecloud",
+      "includeVars": true,
+      "keepTime": true,
+      "targetBlank": false,
+      "asDropdown": false,
+      "tags": []
+    },
+    {
+      "title": "Live V/A/P",
+      "type": "link",
+      "icon": "bolt",
+      "url": "/d/solar-live-vap/solar-live-v-a-p",
+      "includeVars": true,
+      "keepTime": true,
+      "targetBlank": false,
+      "asDropdown": false,
+      "tags": []
+    },
+    {
+      "title": "Electrical",
+      "type": "link",
+      "icon": "graph-bar",
+      "url": "/d/solar-electrical/solar-electrical",
+      "includeVars": true,
+      "keepTime": true,
+      "targetBlank": false,
+      "asDropdown": false,
+      "tags": []
+    }
+  ],
+  "panels": [
+    {
+      "id": 10,
+      "title": "House",
+      "type": "stat",
+      "gridPos": {
+        "h": 4,
+        "w": 3,
+        "x": 0,
+        "y": 0
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influxdb_solar"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "kWh",
+          "decimals": 1,
+          "displayName": "House",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "purple"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "purple",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/House/",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value",
+        "orientation": "auto"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influxdb_solar"
+          },
+          "query": "import \"timezone\"\nimport \"date\"\nimport \"array\"\noption location = timezone.fixed(offset: 7h)\n\nday0 = today()\nempty = array.from(rows: [{_time: 1970-01-01T00:00:00Z, _value: 0.0}])\n  |> filter(fn: (r) => false)\n\npastStop = if v.timeRangeStop < day0 then v.timeRangeStop else day0\npast = if v.timeRangeStart < day0 and pastStop > v.timeRangeStart then\n  from(bucket: \"solar_1d\")\n    |> range(start: v.timeRangeStart, stop: pastStop)\n    |> filter(fn: (r) => r._measurement == \"solar\" and r._field == \"value\")\n    |> filter(fn: (r) => r.device == \"${device}\")\n    |> filter(fn: (r) => r.component == \"house\" and r.metric == \"energy_today\")\n    |> aggregateWindow(every: 1d, fn: last, createEmpty: false, timeSrc: \"_stop\")\nelse\n  empty\n\ncurStart = if v.timeRangeStart > day0 then v.timeRangeStart else day0\ncur = if v.timeRangeStop > day0 and curStart < v.timeRangeStop then\n  from(bucket: \"solar_raw\")\n    |> range(start: curStart, stop: v.timeRangeStop)\n    |> filter(fn: (r) => r._measurement == \"solar\" and r._field == \"value\")\n    |> filter(fn: (r) => r.device == \"${device}\")\n    |> filter(fn: (r) => r.component == \"house\" and r.metric == \"energy_today\")\n    |> aggregateWindow(every: 1d, fn: last, createEmpty: false, timeSrc: \"_stop\")\nelse\n  empty\n\nunion(tables: [past, cur])\n  |> sum()\n  |> map(fn: (r) => ({ r with _field: \"House\" }))"
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "title": "Solar",
+      "type": "stat",
+      "gridPos": {
+        "h": 4,
+        "w": 3,
+        "x": 3,
+        "y": 0
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influxdb_solar"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "kWh",
+          "decimals": 1,
+          "displayName": "Solar",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "orange"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "orange",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/Solar/",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value",
+        "orientation": "auto"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influxdb_solar"
+          },
+          "query": "import \"timezone\"\nimport \"date\"\nimport \"array\"\noption location = timezone.fixed(offset: 7h)\n\nday0 = today()\nempty = array.from(rows: [{_time: 1970-01-01T00:00:00Z, _value: 0.0}])\n  |> filter(fn: (r) => false)\n\npastStop = if v.timeRangeStop < day0 then v.timeRangeStop else day0\npast = if v.timeRangeStart < day0 and pastStop > v.timeRangeStart then\n  from(bucket: \"solar_1d\")\n    |> range(start: v.timeRangeStart, stop: pastStop)\n    |> filter(fn: (r) => r._measurement == \"solar\" and r._field == \"value\")\n    |> filter(fn: (r) => r.device == \"${device}\")\n    |> filter(fn: (r) => r.component == \"pv\" and r.metric == \"energy_today\")\n    |> aggregateWindow(every: 1d, fn: last, createEmpty: false, timeSrc: \"_stop\")\nelse\n  empty\n\ncurStart = if v.timeRangeStart > day0 then v.timeRangeStart else day0\ncur = if v.timeRangeStop > day0 and curStart < v.timeRangeStop then\n  from(bucket: \"solar_raw\")\n    |> range(start: curStart, stop: v.timeRangeStop)\n    |> filter(fn: (r) => r._measurement == \"solar\" and r._field == \"value\")\n    |> filter(fn: (r) => r.device == \"${device}\")\n    |> filter(fn: (r) => r.component == \"pv\" and r.metric == \"energy_today\")\n    |> aggregateWindow(every: 1d, fn: last, createEmpty: false, timeSrc: \"_stop\")\nelse\n  empty\n\nunion(tables: [past, cur])\n  |> sum()\n  |> map(fn: (r) => ({ r with _field: \"Solar\" }))"
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "title": "Grid import",
+      "type": "stat",
+      "gridPos": {
+        "h": 4,
+        "w": 3,
+        "x": 6,
+        "y": 0
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influxdb_solar"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "kWh",
+          "decimals": 1,
+          "displayName": "Import",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/Import/",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value",
+        "orientation": "auto"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influxdb_solar"
+          },
+          "query": "import \"timezone\"\nimport \"date\"\nimport \"array\"\noption location = timezone.fixed(offset: 7h)\n\nday0 = today()\nempty = array.from(rows: [{_time: 1970-01-01T00:00:00Z, _value: 0.0}])\n  |> filter(fn: (r) => false)\n\npastStop = if v.timeRangeStop < day0 then v.timeRangeStop else day0\npast = if v.timeRangeStart < day0 and pastStop > v.timeRangeStart then\n  from(bucket: \"solar_1d\")\n    |> range(start: v.timeRangeStart, stop: pastStop)\n    |> filter(fn: (r) => r._measurement == \"solar\" and r._field == \"value\")\n    |> filter(fn: (r) => r.device == \"${device}\")\n    |> filter(fn: (r) => r.component == \"grid\" and r.metric == \"buy_today\")\n    |> aggregateWindow(every: 1d, fn: last, createEmpty: false, timeSrc: \"_stop\")\nelse\n  empty\n\ncurStart = if v.timeRangeStart > day0 then v.timeRangeStart else day0\ncur = if v.timeRangeStop > day0 and curStart < v.timeRangeStop then\n  from(bucket: \"solar_raw\")\n    |> range(start: curStart, stop: v.timeRangeStop)\n    |> filter(fn: (r) => r._measurement == \"solar\" and r._field == \"value\")\n    |> filter(fn: (r) => r.device == \"${device}\")\n    |> filter(fn: (r) => r.component == \"grid\" and r.metric == \"buy_today\")\n    |> aggregateWindow(every: 1d, fn: last, createEmpty: false, timeSrc: \"_stop\")\nelse\n  empty\n\nunion(tables: [past, cur])\n  |> sum()\n  |> map(fn: (r) => ({ r with _field: \"Import\" }))"
+        }
+      ]
+    },
+    {
+      "id": 13,
+      "title": "Grid export",
+      "type": "stat",
+      "gridPos": {
+        "h": 4,
+        "w": 3,
+        "x": 9,
+        "y": 0
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influxdb_solar"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "kWh",
+          "decimals": 1,
+          "displayName": "Export",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "semi-dark-blue"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "semi-dark-blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/Export/",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value",
+        "orientation": "auto"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influxdb_solar"
+          },
+          "query": "import \"timezone\"\nimport \"date\"\nimport \"array\"\noption location = timezone.fixed(offset: 7h)\n\nday0 = today()\nempty = array.from(rows: [{_time: 1970-01-01T00:00:00Z, _value: 0.0}])\n  |> filter(fn: (r) => false)\n\npastStop = if v.timeRangeStop < day0 then v.timeRangeStop else day0\npast = if v.timeRangeStart < day0 and pastStop > v.timeRangeStart then\n  from(bucket: \"solar_1d\")\n    |> range(start: v.timeRangeStart, stop: pastStop)\n    |> filter(fn: (r) => r._measurement == \"solar\" and r._field == \"value\")\n    |> filter(fn: (r) => r.device == \"${device}\")\n    |> filter(fn: (r) => r.component == \"grid\" and r.metric == \"sell_today\")\n    |> aggregateWindow(every: 1d, fn: last, createEmpty: false, timeSrc: \"_stop\")\nelse\n  empty\n\ncurStart = if v.timeRangeStart > day0 then v.timeRangeStart else day0\ncur = if v.timeRangeStop > day0 and curStart < v.timeRangeStop then\n  from(bucket: \"solar_raw\")\n    |> range(start: curStart, stop: v.timeRangeStop)\n    |> filter(fn: (r) => r._measurement == \"solar\" and r._field == \"value\")\n    |> filter(fn: (r) => r.device == \"${device}\")\n    |> filter(fn: (r) => r.component == \"grid\" and r.metric == \"sell_today\")\n    |> aggregateWindow(every: 1d, fn: last, createEmpty: false, timeSrc: \"_stop\")\nelse\n  empty\n\nunion(tables: [past, cur])\n  |> sum()\n  |> map(fn: (r) => ({ r with _field: \"Export\" }))"
+        }
+      ]
+    },
+    {
+      "id": 14,
+      "title": "Battery net",
+      "description": "Discharge − Charge",
+      "type": "stat",
+      "gridPos": {
+        "h": 4,
+        "w": 3,
+        "x": 12,
+        "y": 0
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influxdb_solar"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "kWh",
+          "decimals": 1,
+          "displayName": "Battery",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "green"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/Battery/",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value",
+        "orientation": "auto"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influxdb_solar"
+          },
+          "query": "import \"timezone\"\nimport \"date\"\nimport \"array\"\noption location = timezone.fixed(offset: 7h)\n\nday0 = today()\nempty = array.from(rows: [{_time: 1970-01-01T00:00:00Z, _value: 0.0}])\n  |> filter(fn: (r) => false)\n\npastStop = if v.timeRangeStop < day0 then v.timeRangeStop else day0\npast = if v.timeRangeStart < day0 and pastStop > v.timeRangeStart then\n  from(bucket: \"solar_1d\")\n    |> range(start: v.timeRangeStart, stop: pastStop)\n    |> filter(fn: (r) => r._measurement == \"solar\" and r._field == \"value\")\n    |> filter(fn: (r) => r.device == \"${device}\")\n    |> filter(fn: (r) =>\n        r.component == \"battery\" and (r.metric == \"discharge_today\" or r.metric == \"charge_today\")\n    )\n    |> map(fn: (r) => ({\n        r with\n          _field: \"Battery\",\n          _value: if r.metric == \"charge_today\" then 0.0 - r._value else r._value\n    }))\n    |> aggregateWindow(every: 1d, fn: last, createEmpty: false, timeSrc: \"_stop\")\nelse\n  empty\n\ncurStart = if v.timeRangeStart > day0 then v.timeRangeStart else day0\ncur = if v.timeRangeStop > day0 and curStart < v.timeRangeStop then\n  from(bucket: \"solar_raw\")\n    |> range(start: curStart, stop: v.timeRangeStop)\n    |> filter(fn: (r) => r._measurement == \"solar\" and r._field == \"value\")\n    |> filter(fn: (r) => r.device == \"${device}\")\n    |> filter(fn: (r) =>\n        r.component == \"battery\" and (r.metric == \"discharge_today\" or r.metric == \"charge_today\")\n    )\n    |> map(fn: (r) => ({\n        r with\n          _field: \"Battery\",\n          _value: if r.metric == \"charge_today\" then 0.0 - r._value else r._value\n    }))\n    |> aggregateWindow(every: 1d, fn: last, createEmpty: false, timeSrc: \"_stop\")\nelse\n  empty\n\nunion(tables: [past, cur])\n  |> group(columns: [\"_field\"])\n  |> sum()\n  |> map(fn: (r) => ({ r with _field: \"Battery\" }))"
+        }
+      ]
+    },
+    {
+      "id": 16,
+      "title": "Estimate Cost",
+      "description": "Import × ₫/kWh",
+      "type": "stat",
+      "gridPos": {
+        "h": 4,
+        "w": 3,
+        "x": 15,
+        "y": 0
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influxdb_solar"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0,
+          "displayName": "₫",
+          "unit": "none",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "red"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value",
+        "orientation": "auto"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influxdb_solar"
+          },
+          "query": "import \"timezone\"\nimport \"date\"\nimport \"array\"\noption location = timezone.fixed(offset: 7h)\nprice = float(v: \"${grid_price}\")\n\nday0 = today()\nempty = array.from(rows: [{_time: 1970-01-01T00:00:00Z, _value: 0.0}])\n  |> filter(fn: (r) => false)\n\npastStop = if v.timeRangeStop < day0 then v.timeRangeStop else day0\npast = if v.timeRangeStart < day0 and pastStop > v.timeRangeStart then\n  from(bucket: \"solar_1d\")\n    |> range(start: v.timeRangeStart, stop: pastStop)\n    |> filter(fn: (r) => r._measurement == \"solar\" and r._field == \"value\")\n    |> filter(fn: (r) => r.device == \"${device}\")\n    |> filter(fn: (r) => r.component == \"grid\" and r.metric == \"buy_today\")\n    |> aggregateWindow(every: 1d, fn: last, createEmpty: false, timeSrc: \"_stop\")\nelse\n  empty\n\ncurStart = if v.timeRangeStart > day0 then v.timeRangeStart else day0\ncur = if v.timeRangeStop > day0 and curStart < v.timeRangeStop then\n  from(bucket: \"solar_raw\")\n    |> range(start: curStart, stop: v.timeRangeStop)\n    |> filter(fn: (r) => r._measurement == \"solar\" and r._field == \"value\")\n    |> filter(fn: (r) => r.device == \"${device}\")\n    |> filter(fn: (r) => r.component == \"grid\" and r.metric == \"buy_today\")\n    |> aggregateWindow(every: 1d, fn: last, createEmpty: false, timeSrc: \"_stop\")\nelse\n  empty\n\nunion(tables: [past, cur])\n  |> sum()\n  |> map(fn: (r) => ({ _time: now(), _value: r._value * price }))\n  |> yield(name: \"Cost\")"
+        }
+      ]
+    },
+    {
+      "id": 17,
+      "title": "Estimate Saving",
+      "description": "(Solar + Discharge − Charge) × ₫/kWh",
+      "type": "stat",
+      "gridPos": {
+        "h": 4,
+        "w": 3,
+        "x": 18,
+        "y": 0
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influxdb_solar"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0,
+          "displayName": "₫",
+          "unit": "none",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "green"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value",
+        "orientation": "auto"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influxdb_solar"
+          },
+          "query": "import \"timezone\"\nimport \"date\"\nimport \"array\"\noption location = timezone.fixed(offset: 7h)\n\nprice = float(v: \"${grid_price}\")\nday0 = today()\nempty = array.from(rows: [{_time: 1970-01-01T00:00:00Z, _value: 0.0}])\n  |> filter(fn: (r) => false)\n\npastStop = if v.timeRangeStop < day0 then v.timeRangeStop else day0\npast = if v.timeRangeStart < day0 and pastStop > v.timeRangeStart then\n  from(bucket: \"solar_1d\")\n    |> range(start: v.timeRangeStart, stop: pastStop)\n    |> filter(fn: (r) => r._measurement == \"solar\" and r._field == \"value\")\n    |> filter(fn: (r) => r.device == \"${device}\")\n    |> filter(fn: (r) =>\n        (r.component == \"pv\" and r.metric == \"energy_today\") or\n        (r.component == \"battery\" and r.metric == \"discharge_today\") or\n        (r.component == \"battery\" and r.metric == \"charge_today\")\n    )\n    |> map(fn: (r) => ({\n        r with\n          _field: \"part\",\n          _value: if r.metric == \"charge_today\" then 0.0 - r._value else r._value\n    }))\n    |> aggregateWindow(every: 1d, fn: last, createEmpty: false, timeSrc: \"_stop\")\nelse\n  empty\n\ncurStart = if v.timeRangeStart > day0 then v.timeRangeStart else day0\ncur = if v.timeRangeStop > day0 and curStart < v.timeRangeStop then\n  from(bucket: \"solar_raw\")\n    |> range(start: curStart, stop: v.timeRangeStop)\n    |> filter(fn: (r) => r._measurement == \"solar\" and r._field == \"value\")\n    |> filter(fn: (r) => r.device == \"${device}\")\n    |> filter(fn: (r) =>\n        (r.component == \"pv\" and r.metric == \"energy_today\") or\n        (r.component == \"battery\" and r.metric == \"discharge_today\") or\n        (r.component == \"battery\" and r.metric == \"charge_today\")\n    )\n    |> map(fn: (r) => ({\n        r with\n          _field: \"part\",\n          _value: if r.metric == \"charge_today\" then 0.0 - r._value else r._value\n    }))\n    |> aggregateWindow(every: 1d, fn: last, createEmpty: false, timeSrc: \"_stop\")\nelse\n  empty\n\nunion(tables: [past, cur])\n  |> group(columns: [\"_field\"])\n  |> sum()\n  |> map(fn: (r) => ({ _time: now(), _value: r._value * price }))\n  |> yield(name: \"Saving\")"
+        }
+      ]
+    },
+    {
+      "id": 15,
+      "title": "Self-sufficiency",
+      "type": "gauge",
+      "gridPos": {
+        "h": 4,
+        "w": 3,
+        "x": 21,
+        "y": 0
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influxdb_solar"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "decimals": 0,
+          "displayName": "Self %",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 50
+              },
+              {
+                "color": "green",
+                "value": 80
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "orientation": "auto",
+        "sizing": "auto"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influxdb_solar"
+          },
+          "query": "import \"timezone\"\nimport \"date\"\nimport \"array\"\noption location = timezone.fixed(offset: 7h)\n\nday0 = today()\nempty = array.from(rows: [{_time: 1970-01-01T00:00:00Z, _value: 0.0}])\n  |> filter(fn: (r) => false)\n\npastStop = if v.timeRangeStop < day0 then v.timeRangeStop else day0\npast = if v.timeRangeStart < day0 and pastStop > v.timeRangeStart then\n  from(bucket: \"solar_1d\")\n    |> range(start: v.timeRangeStart, stop: pastStop)\n    |> filter(fn: (r) => r._measurement == \"solar\" and r._field == \"value\")\n    |> filter(fn: (r) => r.device == \"${device}\")\n    |> filter(fn: (r) =>\n        (r.component == \"house\" and r.metric == \"energy_today\") or\n        (r.component == \"grid\" and r.metric == \"buy_today\")\n    )\n    |> map(fn: (r) => ({\n        r with _field: if r.component == \"house\" then \"house\" else \"buy\"\n    }))\n    |> aggregateWindow(every: 1d, fn: last, createEmpty: false, timeSrc: \"_stop\")\nelse\n  empty\n\ncurStart = if v.timeRangeStart > day0 then v.timeRangeStart else day0\ncur = if v.timeRangeStop > day0 and curStart < v.timeRangeStop then\n  from(bucket: \"solar_raw\")\n    |> range(start: curStart, stop: v.timeRangeStop)\n    |> filter(fn: (r) => r._measurement == \"solar\" and r._field == \"value\")\n    |> filter(fn: (r) => r.device == \"${device}\")\n    |> filter(fn: (r) =>\n        (r.component == \"house\" and r.metric == \"energy_today\") or\n        (r.component == \"grid\" and r.metric == \"buy_today\")\n    )\n    |> map(fn: (r) => ({\n        r with _field: if r.component == \"house\" then \"house\" else \"buy\"\n    }))\n    |> aggregateWindow(every: 1d, fn: last, createEmpty: false, timeSrc: \"_stop\")\nelse\n  empty\n\nunion(tables: [past, cur])\n\n\n  |> group(columns: [\"_field\"])\n  |> sum()\n  |> map(fn: (r) => ({ _time: now(), _field: r._field, _value: r._value }))\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> map(fn: (r) => {\n      h = if exists r.house then float(v: r.house) else 0.0\n      b = if exists r.buy then float(v: r.buy) else 0.0\n      raw = if h > 0.0 then (h - b) / h * 100.0 else 0.0\n      pct = if raw < 0.0 then 0.0 else raw\n      return { _time: r._time, _field: \"Self\", _value: pct }\n  })"
+        }
+      ]
+    },
+    {
+      "type": "row",
+      "title": "Production vs Consumption (calendar month of Time Picker)",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 4
+      },
+      "id": 103,
+      "collapsed": false
+    },
+    {
+      "id": 80,
+      "title": "Production vs Consumption — ${__from:date:MMMM YYYY}",
+      "description": "Full calendar month of the Time Picker start. Bars = Production (PV + discharge − charge). Line = Consumption (house).",
+      "type": "volkovlabs-echarts-panel",
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 5
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influxdb_solar"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {
+        "editorMode": "code",
+        "getOption": "const toArray = (field) => {\n  if (!field || field.values == null) {\n    return [];\n  }\n  const v = field.values.buffer || field.values;\n  const n = typeof v.length === 'number' ? v.length : 0;\n  const out = [];\n  for (let i = 0; i < n; i += 1) {\n    out.push(typeof v.get === 'function' ? v.get(i) : v[i]);\n  }\n  return out;\n};\n\nconst seriesList = (context.panel.data && context.panel.data.series) || [];\nconst series = seriesList[0];\nif (!series) {\n  return {\n    backgroundColor: 'transparent',\n    title: {\n      text: 'No data',\n      left: 'center',\n      top: 'middle',\n      textStyle: { color: '#888', fontSize: 14 },\n    },\n  };\n}\n\nconst day = toArray(series.fields.find((f) => f.name === 'Day'));\nconst production = toArray(series.fields.find((f) => f.name === 'Production'));\nconst consumption = toArray(series.fields.find((f) => f.name === 'Consumption'));\n\nreturn {\n  backgroundColor: 'transparent',\n  tooltip: {\n    trigger: 'axis',\n    axisPointer: { type: 'shadow' },\n  },\n  legend: {\n    data: ['Production', 'Consumption'],\n    bottom: 0,\n    textStyle: { color: '#ccccdc' },\n  },\n  grid: {\n    left: 48,\n    right: 24,\n    top: 28,\n    bottom: 48,\n  },\n  xAxis: {\n    type: 'category',\n    data: day,\n    axisLabel: { color: '#9b9b9b' },\n  },\n  yAxis: {\n    type: 'value',\n    name: 'kWh',\n    nameTextStyle: { color: '#9b9b9b' },\n    axisLabel: { color: '#9b9b9b' },\n    splitLine: { lineStyle: { color: 'rgba(120,120,120,0.25)' } },\n  },\n  series: [\n    {\n      name: 'Production',\n      type: 'bar',\n      data: production,\n      barMaxWidth: 28,\n      itemStyle: { color: '#FF9830' },\n    },\n    {\n      name: 'Consumption',\n      type: 'line',\n      data: consumption,\n      symbol: 'circle',\n      symbolSize: 6,\n      lineStyle: { width: 3, color: '#B877D9' },\n      itemStyle: { color: '#B877D9' },\n      z: 3,\n    },\n  ],\n};",
+        "renderer": "canvas",
+        "editor": {
+          "format": "none"
+        },
+        "themeEditor": {
+          "name": "default",
+          "config": "{}"
+        },
+        "map": "none",
+        "baidu": {
+          "key": "",
+          "callback": "bmapReady"
+        },
+        "gaode": {
+          "key": "",
+          "plugin": "AMap.Scale,AMap.ToolBar"
+        },
+        "google": {
+          "key": "",
+          "callback": "gmapReady"
+        },
+        "visualEditor": {
+          "dataset": [],
+          "series": [],
+          "code": "return {\n  dataset: context.editor.dataset,\n  series: context.editor.series,\n};\n"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influxdb_solar"
+          },
+          "query": "import \"timezone\"\nimport \"date\"\nimport \"array\"\noption location = timezone.fixed(offset: 7h)\n\nmonthStart = date.truncate(t: v.timeRangeStart, unit: 1mo)\nmonthStop = date.add(d: 1mo, to: monthStart)\nday0 = today()\nempty = array.from(rows: [{_time: 1970-01-01T00:00:00Z, _value: 0.0}])\n  |> filter(fn: (r) => false)\n\npastStop = if monthStop < day0 then monthStop else day0\npast = if monthStart < day0 and pastStop > monthStart then\n  from(bucket: \"solar_1d\")\n    |> range(start: monthStart, stop: pastStop)\n    |> filter(fn: (r) => r._measurement == \"solar\" and r._field == \"value\")\n    |> filter(fn: (r) => r.device == \"${device}\")\n    |> filter(fn: (r) =>\n        (r.component == \"pv\" and r.metric == \"energy_today\") or\n        (r.component == \"battery\" and r.metric == \"discharge_today\") or\n        (r.component == \"battery\" and r.metric == \"charge_today\") or\n        (r.component == \"house\" and r.metric == \"energy_today\")\n    )\n    |> map(fn: (r) => ({\n        r with _field:\n          if r.component == \"house\" then \"house\"\n          else if r.metric == \"charge_today\" then \"charge\"\n          else if r.metric == \"discharge_today\" then \"discharge\"\n          else \"pv\"\n    }))\n    |> aggregateWindow(every: 1d, fn: last, createEmpty: true, timeSrc: \"_start\")\nelse\n  empty\n\ncurStart = if monthStart > day0 then monthStart else day0\ncur = if monthStop > day0 and curStart < monthStop then\n  from(bucket: \"solar_raw\")\n    |> range(start: curStart, stop: monthStop)\n    |> filter(fn: (r) => r._measurement == \"solar\" and r._field == \"value\")\n    |> filter(fn: (r) => r.device == \"${device}\")\n    |> filter(fn: (r) =>\n        (r.component == \"pv\" and r.metric == \"energy_today\") or\n        (r.component == \"battery\" and r.metric == \"discharge_today\") or\n        (r.component == \"battery\" and r.metric == \"charge_today\") or\n        (r.component == \"house\" and r.metric == \"energy_today\")\n    )\n    |> map(fn: (r) => ({\n        r with _field:\n          if r.component == \"house\" then \"house\"\n          else if r.metric == \"charge_today\" then \"charge\"\n          else if r.metric == \"discharge_today\" then \"discharge\"\n          else \"pv\"\n    }))\n    |> aggregateWindow(every: 1d, fn: last, createEmpty: true, timeSrc: \"_start\")\nelse\n  empty\n\nunion(tables: [past, cur])\n  |> filter(fn: (r) => exists r._time and r._time >= monthStart and r._time < monthStop)\n  |> map(fn: (r) => ({ r with _value: if exists r._value then r._value else 0.0 }))\n  |> group(columns: [\"_field\"])\n  |> aggregateWindow(every: 1d, fn: last, createEmpty: true, timeSrc: \"_start\")\n  |> map(fn: (r) => ({ r with _value: if exists r._value then r._value else 0.0 }))\n  |> filter(fn: (r) => exists r._time and r._time >= monthStart and r._time < monthStop)\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> map(fn: (r) => {\n      pv = if exists r.pv then float(v: r.pv) else 0.0\n      dis = if exists r.discharge then float(v: r.discharge) else 0.0\n      chg = if exists r.charge then float(v: r.charge) else 0.0\n      house = if exists r.house then float(v: r.house) else 0.0\n      d = date.monthDay(t: r._time)\n      dayLabel = if d < 10 then \"0\" + string(v: d) else string(v: d)\n      return {\n        _time: v.timeRangeStart,\n        Day: dayLabel,\n        Production: pv + dis - chg,\n        Consumption: house\n      }\n  })\n  |> group()\n  |> sort(columns: [\"Day\"])\n  |> yield(name: \"month\")",
+          "hide": false
+        }
+      ],
+      "pluginVersion": "7.2.5"
+    },
+    {
+      "type": "row",
+      "title": "PV long-term (fixed ranges - not linked to Time Picker)",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 15
+      },
+      "id": 100,
+      "collapsed": false
+    },
+    {
+      "id": 50,
+      "title": "PV - Day (24h)",
+      "description": "Fixed: today (UTC+7). PV1+PV2 power (kW) as line. Ignores Time Picker.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 16
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influxdb_solar"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "kwatt",
+          "decimals": 2,
+          "displayName": "${__field.name}",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "fillOpacity": 20,
+            "lineWidth": 2,
+            "showPoints": "never",
+            "spanNulls": false
+          },
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "orange"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "max",
+            "mean"
+          ]
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influxdb_solar"
+          },
+          "query": "import \"timezone\"\nimport \"date\"\noption location = timezone.fixed(offset: 7h)\n\nfrom(bucket: \"solar_raw\")\n  |> range(start: today())\n  |> filter(fn: (r) => r._measurement == \"solar\" and r._field == \"value\")\n  |> filter(fn: (r) => r.device == \"${device}\")\n  |> filter(fn: (r) => (r.component == \"pv1\" or r.component == \"pv2\") and r.metric == \"power\")\n  |> aggregateWindow(every: 5m, fn: mean, createEmpty: false)\n  |> group(columns: [\"_time\"])\n  |> sum(column: \"_value\")\n  |> group()\n  |> map(fn: (r) => ({ r with _field: \"PV\", _value: r._value / 1000.0 }))\n  |> keep(columns: [\"_time\", \"_field\", \"_value\"])\n  |> yield(name: \"day\")"
+        }
+      ],
+      "timeFrom": "now/d"
+    },
+    {
+      "id": 51,
+      "title": "PV - Week (Mon-Sun)",
+      "description": "Fixed: current week from Monday (UTC+7). Daily pv/energy_today. Ignores Time Picker.",
+      "type": "barchart",
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 16
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influxdb_solar"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "kWh",
+          "decimals": 2,
+          "displayName": "${__field.name}",
+          "custom": {
+            "fillOpacity": 90,
+            "lineWidth": 1,
+            "gradientMode": "none"
+          },
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "orange"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byType",
+              "options": "time"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "time: DD/MM"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "orientation": "vertical",
+        "stacking": "none",
+        "showValue": "auto",
+        "barWidth": 0.85,
+        "groupWidth": 0.8,
+        "xTickLabelRotation": -45,
+        "xTickLabelMaxLength": 16,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "sum"
+          ]
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influxdb_solar"
+          },
+          "query": "import \"timezone\"\nimport \"date\"\noption location = timezone.fixed(offset: 7h)\n\nday0 = date.truncate(t: now(), unit: 1d)\nwd = date.weekDay(t: day0)\nsinceMon = if wd == 0 then 6 else wd - 1\nweekStart = date.add(d: duration(v: \"-\" + string(v: sinceMon) + \"d\"), to: day0)\nweekStop = date.add(d: 7d, to: weekStart)\ntodayStart = today()\n\npast = from(bucket: \"solar_1d\")\n  |> range(start: weekStart, stop: todayStart)\n  |> filter(fn: (r) => r._measurement == \"solar\" and r._field == \"value\")\n  |> filter(fn: (r) => r.device == \"${device}\")\n  |> filter(fn: (r) => r.component == \"pv\" and r.metric == \"energy_today\")\n  |> aggregateWindow(every: 1d, fn: last, createEmpty: true, timeSrc: \"_start\")\n\ncur = from(bucket: \"solar_raw\")\n  |> range(start: todayStart, stop: weekStop)\n  |> filter(fn: (r) => r._measurement == \"solar\" and r._field == \"value\")\n  |> filter(fn: (r) => r.device == \"${device}\")\n  |> filter(fn: (r) => r.component == \"pv\" and r.metric == \"energy_today\")\n  |> aggregateWindow(every: 1d, fn: last, createEmpty: true, timeSrc: \"_start\")\n\nunion(tables: [past, cur])\n  |> map(fn: (r) => ({ r with\n      _field: \"PV\",\n      _value: if exists r._value then r._value else 0.0\n  }))\n  |> keep(columns: [\"_time\", \"_field\", \"_value\"])\n  |> group(columns: [\"_field\"])\n  |> yield(name: \"week\")"
+        }
+      ],
+      "timeFrom": "now/w"
+    },
+    {
+      "id": 52,
+      "title": "PV - Month (Jan-Dec)",
+      "description": "Fixed: current calendar year, 12 months from January. Empty if no data. Ignores Time Picker.",
+      "type": "barchart",
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 25
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influxdb_solar"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "kWh",
+          "decimals": 2,
+          "displayName": "${__field.name}",
+          "custom": {
+            "fillOpacity": 90,
+            "lineWidth": 1,
+            "gradientMode": "none"
+          },
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "orange"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byType",
+              "options": "time"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "time: MMM"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "orientation": "vertical",
+        "stacking": "none",
+        "showValue": "auto",
+        "barWidth": 0.85,
+        "groupWidth": 0.8,
+        "xTickLabelRotation": -45,
+        "xTickLabelMaxLength": 16,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "sum"
+          ]
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influxdb_solar"
+          },
+          "query": "import \"timezone\"\nimport \"date\"\noption location = timezone.fixed(offset: 7h)\n\nyearStart = date.truncate(t: now(), unit: 1y)\nyearStop = date.add(d: 1y, to: yearStart)\ntodayStart = today()\n\npast = from(bucket: \"solar_1d\")\n  |> range(start: yearStart, stop: todayStart)\n  |> filter(fn: (r) => r._measurement == \"solar\" and r._field == \"value\")\n  |> filter(fn: (r) => r.device == \"${device}\")\n  |> filter(fn: (r) => r.component == \"pv\" and r.metric == \"energy_today\")\n  |> aggregateWindow(every: 1d, fn: last, createEmpty: false, timeSrc: \"_start\")\n\ncur = from(bucket: \"solar_raw\")\n  |> range(start: todayStart, stop: yearStop)\n  |> filter(fn: (r) => r._measurement == \"solar\" and r._field == \"value\")\n  |> filter(fn: (r) => r.device == \"${device}\")\n  |> filter(fn: (r) => r.component == \"pv\" and r.metric == \"energy_today\")\n  |> aggregateWindow(every: 1d, fn: last, createEmpty: false, timeSrc: \"_start\")\n\nunion(tables: [past, cur])\n  |> aggregateWindow(every: 1mo, fn: sum, createEmpty: true, timeSrc: \"_start\")\n  |> map(fn: (r) => ({ r with _field: \"PV\" }))\n  |> keep(columns: [\"_time\", \"_field\", \"_value\"])\n  |> group(columns: [\"_field\"])\n  |> yield(name: \"month\")"
+        }
+      ],
+      "timeFrom": "now/y"
+    },
+    {
+      "id": 53,
+      "title": "PV - Year (6y)",
+      "description": "Fixed: 6 calendar years ending with current year on the right. Ignores Time Picker.",
+      "type": "barchart",
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 25
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influxdb_solar"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "kWh",
+          "decimals": 2,
+          "displayName": "${__field.name}",
+          "custom": {
+            "fillOpacity": 90,
+            "lineWidth": 1,
+            "gradientMode": "none"
+          },
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "orange"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byType",
+              "options": "time"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "time: YYYY"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "orientation": "vertical",
+        "stacking": "none",
+        "showValue": "auto",
+        "barWidth": 0.85,
+        "groupWidth": 0.8,
+        "xTickLabelRotation": -45,
+        "xTickLabelMaxLength": 16,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "sum"
+          ]
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influxdb_solar"
+          },
+          "query": "import \"timezone\"\nimport \"date\"\noption location = timezone.fixed(offset: 7h)\n\nthisYear = date.truncate(t: now(), unit: 1y)\nstart = date.add(d: -5y, to: thisYear)\nstop = date.add(d: 1y, to: thisYear)\ntodayStart = today()\n\npast = from(bucket: \"solar_1d\")\n  |> range(start: start, stop: todayStart)\n  |> filter(fn: (r) => r._measurement == \"solar\" and r._field == \"value\")\n  |> filter(fn: (r) => r.device == \"${device}\")\n  |> filter(fn: (r) => r.component == \"pv\" and r.metric == \"energy_today\")\n  |> aggregateWindow(every: 1d, fn: last, createEmpty: false, timeSrc: \"_start\")\n\ncur = from(bucket: \"solar_raw\")\n  |> range(start: todayStart, stop: stop)\n  |> filter(fn: (r) => r._measurement == \"solar\" and r._field == \"value\")\n  |> filter(fn: (r) => r.device == \"${device}\")\n  |> filter(fn: (r) => r.component == \"pv\" and r.metric == \"energy_today\")\n  |> aggregateWindow(every: 1d, fn: last, createEmpty: false, timeSrc: \"_start\")\n\nunion(tables: [past, cur])\n  |> aggregateWindow(every: 1y, fn: sum, createEmpty: true, timeSrc: \"_start\")\n  |> map(fn: (r) => ({ r with _field: \"PV\" }))\n  |> keep(columns: [\"_time\", \"_field\", \"_value\"])\n  |> group(columns: [\"_field\"])\n  |> yield(name: \"year\")"
+        }
+      ],
+      "timeFrom": "now-5y/y"
+    },
+    {
+      "type": "row",
+      "title": "House Consumption (fixed ranges - not linked to Time Picker)",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 34
+      },
+      "id": 101,
+      "collapsed": false
+    },
+    {
+      "id": 60,
+      "title": "House - Day (24h)",
+      "description": "Fixed: today (UTC+7). Ignores Time Picker.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 35
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influxdb_solar"
+      },
+      "timeFrom": "now/d",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "kwatt",
+          "decimals": 2,
+          "displayName": "${__field.name}",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "fillOpacity": 20,
+            "lineWidth": 2,
+            "showPoints": "never",
+            "spanNulls": false
+          },
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "purple"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "max",
+            "mean"
+          ]
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influxdb_solar"
+          },
+          "query": "import \"timezone\"\nimport \"date\"\noption location = timezone.fixed(offset: 7h)\n\nfrom(bucket: \"solar_raw\")\n  |> range(start: today())\n  |> filter(fn: (r) => r._measurement == \"solar\" and r._field == \"value\")\n  |> filter(fn: (r) => r.device == \"${device}\")\n  |> filter(fn: (r) => r.component == \"house\" and r.metric == \"power\")\n  |> aggregateWindow(every: 5m, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({ r with _field: \"House\", _value: r._value / 1000.0 }))\n  |> keep(columns: [\"_time\", \"_field\", \"_value\"])\n  |> yield(name: \"day\")"
+        }
+      ]
+    },
+    {
+      "id": 61,
+      "title": "House - Week (Mon-Sun)",
+      "description": "Fixed: current week from Monday (UTC+7). Daily house/energy_today. Ignores Time Picker.",
+      "type": "barchart",
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 35
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influxdb_solar"
+      },
+      "timeFrom": "now/w",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "kWh",
+          "decimals": 2,
+          "displayName": "${__field.name}",
+          "custom": {
+            "fillOpacity": 90,
+            "lineWidth": 1,
+            "gradientMode": "none"
+          },
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "purple"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byType",
+              "options": "time"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "time: DD/MM"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "orientation": "vertical",
+        "stacking": "none",
+        "showValue": "auto",
+        "barWidth": 0.85,
+        "groupWidth": 0.8,
+        "xTickLabelRotation": -45,
+        "xTickLabelMaxLength": 16,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "sum"
+          ]
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influxdb_solar"
+          },
+          "query": "import \"timezone\"\nimport \"date\"\noption location = timezone.fixed(offset: 7h)\n\nday0 = date.truncate(t: now(), unit: 1d)\nwd = date.weekDay(t: day0)\nsinceMon = if wd == 0 then 6 else wd - 1\nweekStart = date.add(d: duration(v: \"-\" + string(v: sinceMon) + \"d\"), to: day0)\nweekStop = date.add(d: 7d, to: weekStart)\ntodayStart = today()\n\npast = from(bucket: \"solar_1d\")\n  |> range(start: weekStart, stop: todayStart)\n  |> filter(fn: (r) => r._measurement == \"solar\" and r._field == \"value\")\n  |> filter(fn: (r) => r.device == \"${device}\")\n  |> filter(fn: (r) => r.component == \"house\" and r.metric == \"energy_today\")\n  |> aggregateWindow(every: 1d, fn: last, createEmpty: true, timeSrc: \"_start\")\n\ncur = from(bucket: \"solar_raw\")\n  |> range(start: todayStart, stop: weekStop)\n  |> filter(fn: (r) => r._measurement == \"solar\" and r._field == \"value\")\n  |> filter(fn: (r) => r.device == \"${device}\")\n  |> filter(fn: (r) => r.component == \"house\" and r.metric == \"energy_today\")\n  |> aggregateWindow(every: 1d, fn: last, createEmpty: true, timeSrc: \"_start\")\n\nunion(tables: [past, cur])\n  |> map(fn: (r) => ({ r with\n      _field: \"House\",\n      _value: if exists r._value then r._value else 0.0\n  }))\n  |> keep(columns: [\"_time\", \"_field\", \"_value\"])\n  |> group(columns: [\"_field\"])\n  |> yield(name: \"week\")"
+        }
+      ]
+    },
+    {
+      "id": 62,
+      "title": "House - Month (Jan-Dec)",
+      "description": "Fixed: current calendar year. Ignores Time Picker.",
+      "type": "barchart",
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 44
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influxdb_solar"
+      },
+      "timeFrom": "now/y",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "kWh",
+          "decimals": 2,
+          "displayName": "${__field.name}",
+          "custom": {
+            "fillOpacity": 90,
+            "lineWidth": 1,
+            "gradientMode": "none"
+          },
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "purple"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byType",
+              "options": "time"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "time: MMM"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "orientation": "vertical",
+        "stacking": "none",
+        "showValue": "auto",
+        "barWidth": 0.85,
+        "groupWidth": 0.8,
+        "xTickLabelRotation": -45,
+        "xTickLabelMaxLength": 16,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "sum"
+          ]
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influxdb_solar"
+          },
+          "query": "import \"timezone\"\nimport \"date\"\noption location = timezone.fixed(offset: 7h)\n\nyearStart = date.truncate(t: now(), unit: 1y)\nyearStop = date.add(d: 1y, to: yearStart)\ntodayStart = today()\n\npast = from(bucket: \"solar_1d\")\n  |> range(start: yearStart, stop: todayStart)\n  |> filter(fn: (r) => r._measurement == \"solar\" and r._field == \"value\")\n  |> filter(fn: (r) => r.device == \"${device}\")\n  |> filter(fn: (r) => r.component == \"house\" and r.metric == \"energy_today\")\n  |> aggregateWindow(every: 1d, fn: last, createEmpty: false, timeSrc: \"_start\")\n\ncur = from(bucket: \"solar_raw\")\n  |> range(start: todayStart, stop: yearStop)\n  |> filter(fn: (r) => r._measurement == \"solar\" and r._field == \"value\")\n  |> filter(fn: (r) => r.device == \"${device}\")\n  |> filter(fn: (r) => r.component == \"house\" and r.metric == \"energy_today\")\n  |> aggregateWindow(every: 1d, fn: last, createEmpty: false, timeSrc: \"_start\")\n\nunion(tables: [past, cur])\n  |> aggregateWindow(every: 1mo, fn: sum, createEmpty: true, timeSrc: \"_start\")\n  |> map(fn: (r) => ({ r with _field: \"House\" }))\n  |> keep(columns: [\"_time\", \"_field\", \"_value\"])\n  |> group(columns: [\"_field\"])\n  |> yield(name: \"month\")"
+        }
+      ]
+    },
+    {
+      "id": 63,
+      "title": "House - Year (6y)",
+      "description": "Fixed: 6 calendar years ending with current year. Ignores Time Picker.",
+      "type": "barchart",
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 44
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influxdb_solar"
+      },
+      "timeFrom": "now-5y/y",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "kWh",
+          "decimals": 2,
+          "displayName": "${__field.name}",
+          "custom": {
+            "fillOpacity": 90,
+            "lineWidth": 1,
+            "gradientMode": "none"
+          },
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "purple"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byType",
+              "options": "time"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "time: YYYY"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "orientation": "vertical",
+        "stacking": "none",
+        "showValue": "auto",
+        "barWidth": 0.85,
+        "groupWidth": 0.8,
+        "xTickLabelRotation": -45,
+        "xTickLabelMaxLength": 16,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "sum"
+          ]
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influxdb_solar"
+          },
+          "query": "import \"timezone\"\nimport \"date\"\noption location = timezone.fixed(offset: 7h)\n\nthisYear = date.truncate(t: now(), unit: 1y)\nstart = date.add(d: -5y, to: thisYear)\nstop = date.add(d: 1y, to: thisYear)\ntodayStart = today()\n\npast = from(bucket: \"solar_1d\")\n  |> range(start: start, stop: todayStart)\n  |> filter(fn: (r) => r._measurement == \"solar\" and r._field == \"value\")\n  |> filter(fn: (r) => r.device == \"${device}\")\n  |> filter(fn: (r) => r.component == \"house\" and r.metric == \"energy_today\")\n  |> aggregateWindow(every: 1d, fn: last, createEmpty: false, timeSrc: \"_start\")\n\ncur = from(bucket: \"solar_raw\")\n  |> range(start: todayStart, stop: stop)\n  |> filter(fn: (r) => r._measurement == \"solar\" and r._field == \"value\")\n  |> filter(fn: (r) => r.device == \"${device}\")\n  |> filter(fn: (r) => r.component == \"house\" and r.metric == \"energy_today\")\n  |> aggregateWindow(every: 1d, fn: last, createEmpty: false, timeSrc: \"_start\")\n\nunion(tables: [past, cur])\n  |> aggregateWindow(every: 1y, fn: sum, createEmpty: true, timeSrc: \"_start\")\n  |> map(fn: (r) => ({ r with _field: \"House\" }))\n  |> keep(columns: [\"_time\", \"_field\", \"_value\"])\n  |> group(columns: [\"_field\"])\n  |> yield(name: \"year\")"
+        }
+      ]
+    },
+    {
+      "type": "row",
+      "title": "Grid Import (fixed ranges - not linked to Time Picker)",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 53
+      },
+      "id": 102,
+      "collapsed": false
+    },
+    {
+      "id": 70,
+      "title": "Import - Day (24h)",
+      "description": "Fixed: today (UTC+7). Ignores Time Picker.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 54
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influxdb_solar"
+      },
+      "timeFrom": "now/d",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "kwatt",
+          "decimals": 2,
+          "displayName": "${__field.name}",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "fillOpacity": 20,
+            "lineWidth": 2,
+            "showPoints": "never",
+            "spanNulls": false
+          },
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "max",
+            "mean"
+          ]
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influxdb_solar"
+          },
+          "query": "import \"timezone\"\nimport \"date\"\noption location = timezone.fixed(offset: 7h)\n\nfrom(bucket: \"solar_raw\")\n  |> range(start: today())\n  |> filter(fn: (r) => r._measurement == \"solar\" and r._field == \"value\")\n  |> filter(fn: (r) => r.device == \"${device}\")\n  |> filter(fn: (r) => r.component == \"grid\" and r.metric == \"power_ct\")\n  |> aggregateWindow(every: 5m, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({\n      r with\n        _field: \"Import\",\n        _value: if r._value > 0.0 then r._value / 1000.0 else 0.0\n  }))\n  |> keep(columns: [\"_time\", \"_field\", \"_value\"])\n  |> yield(name: \"day\")"
+        }
+      ]
+    },
+    {
+      "id": 71,
+      "title": "Import - Week (Mon-Sun)",
+      "description": "Fixed: current week from Monday (UTC+7). Daily grid/buy_today. Ignores Time Picker.",
+      "type": "barchart",
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 54
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influxdb_solar"
+      },
+      "timeFrom": "now/w",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "kWh",
+          "decimals": 2,
+          "displayName": "${__field.name}",
+          "custom": {
+            "fillOpacity": 90,
+            "lineWidth": 1,
+            "gradientMode": "none"
+          },
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byType",
+              "options": "time"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "time: DD/MM"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "orientation": "vertical",
+        "stacking": "none",
+        "showValue": "auto",
+        "barWidth": 0.85,
+        "groupWidth": 0.8,
+        "xTickLabelRotation": -45,
+        "xTickLabelMaxLength": 16,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "sum"
+          ]
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influxdb_solar"
+          },
+          "query": "import \"timezone\"\nimport \"date\"\noption location = timezone.fixed(offset: 7h)\n\nday0 = date.truncate(t: now(), unit: 1d)\nwd = date.weekDay(t: day0)\nsinceMon = if wd == 0 then 6 else wd - 1\nweekStart = date.add(d: duration(v: \"-\" + string(v: sinceMon) + \"d\"), to: day0)\nweekStop = date.add(d: 7d, to: weekStart)\ntodayStart = today()\n\npast = from(bucket: \"solar_1d\")\n  |> range(start: weekStart, stop: todayStart)\n  |> filter(fn: (r) => r._measurement == \"solar\" and r._field == \"value\")\n  |> filter(fn: (r) => r.device == \"${device}\")\n  |> filter(fn: (r) => r.component == \"grid\" and r.metric == \"buy_today\")\n  |> aggregateWindow(every: 1d, fn: last, createEmpty: true, timeSrc: \"_start\")\n\ncur = from(bucket: \"solar_raw\")\n  |> range(start: todayStart, stop: weekStop)\n  |> filter(fn: (r) => r._measurement == \"solar\" and r._field == \"value\")\n  |> filter(fn: (r) => r.device == \"${device}\")\n  |> filter(fn: (r) => r.component == \"grid\" and r.metric == \"buy_today\")\n  |> aggregateWindow(every: 1d, fn: last, createEmpty: true, timeSrc: \"_start\")\n\nunion(tables: [past, cur])\n  |> map(fn: (r) => ({ r with\n      _field: \"Import\",\n      _value: if exists r._value then r._value else 0.0\n  }))\n  |> keep(columns: [\"_time\", \"_field\", \"_value\"])\n  |> group(columns: [\"_field\"])\n  |> yield(name: \"week\")"
+        }
+      ]
+    },
+    {
+      "id": 72,
+      "title": "Import - Month (Jan-Dec)",
+      "description": "Fixed: current calendar year. Ignores Time Picker.",
+      "type": "barchart",
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 63
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influxdb_solar"
+      },
+      "timeFrom": "now/y",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "kWh",
+          "decimals": 2,
+          "displayName": "${__field.name}",
+          "custom": {
+            "fillOpacity": 90,
+            "lineWidth": 1,
+            "gradientMode": "none"
+          },
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byType",
+              "options": "time"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "time: MMM"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "orientation": "vertical",
+        "stacking": "none",
+        "showValue": "auto",
+        "barWidth": 0.85,
+        "groupWidth": 0.8,
+        "xTickLabelRotation": -45,
+        "xTickLabelMaxLength": 16,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "sum"
+          ]
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influxdb_solar"
+          },
+          "query": "import \"timezone\"\nimport \"date\"\noption location = timezone.fixed(offset: 7h)\n\nyearStart = date.truncate(t: now(), unit: 1y)\nyearStop = date.add(d: 1y, to: yearStart)\ntodayStart = today()\n\npast = from(bucket: \"solar_1d\")\n  |> range(start: yearStart, stop: todayStart)\n  |> filter(fn: (r) => r._measurement == \"solar\" and r._field == \"value\")\n  |> filter(fn: (r) => r.device == \"${device}\")\n  |> filter(fn: (r) => r.component == \"grid\" and r.metric == \"buy_today\")\n  |> aggregateWindow(every: 1d, fn: last, createEmpty: false, timeSrc: \"_start\")\n\ncur = from(bucket: \"solar_raw\")\n  |> range(start: todayStart, stop: yearStop)\n  |> filter(fn: (r) => r._measurement == \"solar\" and r._field == \"value\")\n  |> filter(fn: (r) => r.device == \"${device}\")\n  |> filter(fn: (r) => r.component == \"grid\" and r.metric == \"buy_today\")\n  |> aggregateWindow(every: 1d, fn: last, createEmpty: false, timeSrc: \"_start\")\n\nunion(tables: [past, cur])\n  |> aggregateWindow(every: 1mo, fn: sum, createEmpty: true, timeSrc: \"_start\")\n  |> map(fn: (r) => ({ r with _field: \"Import\" }))\n  |> keep(columns: [\"_time\", \"_field\", \"_value\"])\n  |> group(columns: [\"_field\"])\n  |> yield(name: \"month\")"
+        }
+      ]
+    },
+    {
+      "id": 73,
+      "title": "Import - Year (6y)",
+      "description": "Fixed: 6 calendar years ending with current year. Ignores Time Picker.",
+      "type": "barchart",
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 63
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influxdb_solar"
+      },
+      "timeFrom": "now-5y/y",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "kWh",
+          "decimals": 2,
+          "displayName": "${__field.name}",
+          "custom": {
+            "fillOpacity": 90,
+            "lineWidth": 1,
+            "gradientMode": "none"
+          },
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byType",
+              "options": "time"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "time: YYYY"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "orientation": "vertical",
+        "stacking": "none",
+        "showValue": "auto",
+        "barWidth": 0.85,
+        "groupWidth": 0.8,
+        "xTickLabelRotation": -45,
+        "xTickLabelMaxLength": 16,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "sum"
+          ]
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influxdb_solar"
+          },
+          "query": "import \"timezone\"\nimport \"date\"\noption location = timezone.fixed(offset: 7h)\n\nthisYear = date.truncate(t: now(), unit: 1y)\nstart = date.add(d: -5y, to: thisYear)\nstop = date.add(d: 1y, to: thisYear)\ntodayStart = today()\n\npast = from(bucket: \"solar_1d\")\n  |> range(start: start, stop: todayStart)\n  |> filter(fn: (r) => r._measurement == \"solar\" and r._field == \"value\")\n  |> filter(fn: (r) => r.device == \"${device}\")\n  |> filter(fn: (r) => r.component == \"grid\" and r.metric == \"buy_today\")\n  |> aggregateWindow(every: 1d, fn: last, createEmpty: false, timeSrc: \"_start\")\n\ncur = from(bucket: \"solar_raw\")\n  |> range(start: todayStart, stop: stop)\n  |> filter(fn: (r) => r._measurement == \"solar\" and r._field == \"value\")\n  |> filter(fn: (r) => r.device == \"${device}\")\n  |> filter(fn: (r) => r.component == \"grid\" and r.metric == \"buy_today\")\n  |> aggregateWindow(every: 1d, fn: last, createEmpty: false, timeSrc: \"_start\")\n\nunion(tables: [past, cur])\n  |> aggregateWindow(every: 1y, fn: sum, createEmpty: true, timeSrc: \"_start\")\n  |> map(fn: (r) => ({ r with _field: \"Import\" }))\n  |> keep(columns: [\"_time\", \"_field\", \"_value\"])\n  |> group(columns: [\"_field\"])\n  |> yield(name: \"year\")"
+        }
+      ]
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "tags": [
+    "solar",
+    "energy",
+    "report"
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "device",
+        "type": "custom",
+        "label": "Inverter",
+        "query": "Deye SG06 : sg06, ivt-2 : ivt-2",
+        "current": {
+          "selected": true,
+          "text": "Deye SG06",
+          "value": "sg06"
+        },
+        "options": [
+          {
+            "selected": true,
+            "text": "Deye SG06",
+            "value": "sg06"
+          },
+          {
+            "selected": false,
+            "text": "ivt-2",
+            "value": "ivt-2"
+          }
+        ],
+        "multi": false,
+        "includeAll": false
+      },
+      {
+        "name": "grid_price",
+        "type": "textbox",
+        "label": "Price ₫/kWh",
+        "query": "2050",
+        "current": {
+          "selected": true,
+          "text": "2050",
+          "value": "2050"
+        },
+        "options": [
+          {
+            "selected": true,
+            "text": "2050",
+            "value": "2050"
+          }
+        ]
+      }
+    ]
+  },
+  "time": {
+    "from": "now/M",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "Asia/Ho_Chi_Minh",
+  "title": "Solar Energy",
+  "uid": "solar-energy",
+  "version": 20,
+  "weekStart": "monday"
+}

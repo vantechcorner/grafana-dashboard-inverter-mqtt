@@ -1,0 +1,591 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": { "type": "grafana", "uid": "-- Grafana --" },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "description": "Energy totals from *_today counters. Use Grafana time picker only.",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [
+    {
+      "title": "Overview",
+      "type": "link",
+      "icon": "dashboard",
+      "url": "/d/solar-overview/solar-overview",
+      "includeVars": true,
+      "keepTime": true,
+      "targetBlank": false,
+      "asDropdown": false,
+      "tags": []
+    },
+    {
+      "title": "Electrical",
+      "type": "link",
+      "icon": "bolt",
+      "url": "/d/solar-electrical/solar-electrical",
+      "includeVars": true,
+      "keepTime": true,
+      "targetBlank": false,
+      "asDropdown": false,
+      "tags": []
+    }
+  ],
+  "panels": [
+    {
+      "id": 10,
+      "title": "House",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 3, "x": 0, "y": 0 },
+      "datasource": { "type": "influxdb", "uid": "influxdb_solar" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "kWh",
+          "decimals": 1,
+          "displayName": "House",
+          "color": { "mode": "fixed", "fixedColor": "purple" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "purple", "value": null }] }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "/House/", "values": false },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value",
+        "orientation": "auto"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "influxdb", "uid": "influxdb_solar" },
+          "query": "from(bucket: \"solar_raw\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"solar\" and r._field == \"value\")\n  |> filter(fn: (r) => r.device == \"${device}\")\n  |> filter(fn: (r) => r.component == \"house\" and r.metric == \"energy_today\")\n  |> aggregateWindow(every: 1d, fn: last, createEmpty: false)\n  |> sum()\n  |> map(fn: (r) => ({ r with _field: \"House\" }))"
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "title": "Solar",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 3, "x": 3, "y": 0 },
+      "datasource": { "type": "influxdb", "uid": "influxdb_solar" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "kWh",
+          "decimals": 1,
+          "displayName": "Solar",
+          "color": { "mode": "fixed", "fixedColor": "orange" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "orange", "value": null }] }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "/Solar/", "values": false },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value",
+        "orientation": "auto"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "influxdb", "uid": "influxdb_solar" },
+          "query": "from(bucket: \"solar_raw\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"solar\" and r._field == \"value\")\n  |> filter(fn: (r) => r.device == \"${device}\")\n  |> filter(fn: (r) => r.component == \"pv\" and r.metric == \"energy_today\")\n  |> aggregateWindow(every: 1d, fn: last, createEmpty: false)\n  |> sum()\n  |> map(fn: (r) => ({ r with _field: \"Solar\" }))"
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "title": "Grid import",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 3, "x": 6, "y": 0 },
+      "datasource": { "type": "influxdb", "uid": "influxdb_solar" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "kWh",
+          "decimals": 1,
+          "displayName": "Import",
+          "color": { "mode": "fixed", "fixedColor": "blue" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }] }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "/Import/", "values": false },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value",
+        "orientation": "auto"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "influxdb", "uid": "influxdb_solar" },
+          "query": "from(bucket: \"solar_raw\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"solar\" and r._field == \"value\")\n  |> filter(fn: (r) => r.device == \"${device}\")\n  |> filter(fn: (r) => r.component == \"grid\" and r.metric == \"buy_today\")\n  |> aggregateWindow(every: 1d, fn: last, createEmpty: false)\n  |> sum()\n  |> map(fn: (r) => ({ r with _field: \"Import\" }))"
+        }
+      ]
+    },
+    {
+      "id": 13,
+      "title": "Grid export",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 3, "x": 9, "y": 0 },
+      "datasource": { "type": "influxdb", "uid": "influxdb_solar" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "kWh",
+          "decimals": 1,
+          "displayName": "Export",
+          "color": { "mode": "fixed", "fixedColor": "semi-dark-blue" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "semi-dark-blue", "value": null }] }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "/Export/", "values": false },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value",
+        "orientation": "auto"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "influxdb", "uid": "influxdb_solar" },
+          "query": "from(bucket: \"solar_raw\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"solar\" and r._field == \"value\")\n  |> filter(fn: (r) => r.device == \"${device}\")\n  |> filter(fn: (r) => r.component == \"grid\" and r.metric == \"sell_today\")\n  |> aggregateWindow(every: 1d, fn: last, createEmpty: false)\n  |> sum()\n  |> map(fn: (r) => ({ r with _field: \"Export\" }))"
+        }
+      ]
+    },
+    {
+      "id": 14,
+      "title": "Battery net",
+      "description": "Discharge − Charge",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 3, "x": 12, "y": 0 },
+      "datasource": { "type": "influxdb", "uid": "influxdb_solar" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "kWh",
+          "decimals": 1,
+          "displayName": "Battery",
+          "color": { "mode": "fixed", "fixedColor": "green" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "/Battery/", "values": false },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value",
+        "orientation": "auto"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "influxdb", "uid": "influxdb_solar" },
+          "query": "from(bucket: \"solar_raw\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"solar\" and r._field == \"value\")\n  |> filter(fn: (r) => r.device == \"${device}\")\n  |> filter(fn: (r) =>\n      r.component == \"battery\" and (r.metric == \"discharge_today\" or r.metric == \"charge_today\")\n  )\n  |> map(fn: (r) => ({\n      r with\n        _field: \"Battery\",\n        _value: if r.metric == \"charge_today\" then 0.0 - r._value else r._value\n  }))\n  |> aggregateWindow(every: 1d, fn: last, createEmpty: false)\n  |> group(columns: [\"_field\"])\n  |> sum()\n  |> map(fn: (r) => ({ r with _field: \"Battery\" }))"
+        }
+      ]
+    },
+    {
+      "id": 16,
+      "title": "Estimate Cost",
+      "description": "Import × ₫/kWh",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 3, "x": 15, "y": 0 },
+      "datasource": { "type": "influxdb", "uid": "influxdb_solar" },
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0,
+          "displayName": "₫",
+          "unit": "none",
+          "color": { "mode": "fixed", "fixedColor": "red" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }] }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value",
+        "orientation": "auto"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "influxdb", "uid": "influxdb_solar" },
+          "query": "price = float(v: \"${grid_price}\")\n\nfrom(bucket: \"solar_raw\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"solar\" and r._field == \"value\")\n  |> filter(fn: (r) => r.device == \"${device}\")\n  |> filter(fn: (r) => r.component == \"grid\" and r.metric == \"buy_today\")\n  |> aggregateWindow(every: 1d, fn: last, createEmpty: false)\n  |> sum()\n  |> map(fn: (r) => ({ _time: now(), _value: r._value * price }))\n  |> yield(name: \"Cost\")"
+        }
+      ]
+    },
+    {
+      "id": 17,
+      "title": "Estimate Saving",
+      "description": "(Solar + Discharge − Charge) × ₫/kWh",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 3, "x": 18, "y": 0 },
+      "datasource": { "type": "influxdb", "uid": "influxdb_solar" },
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0,
+          "displayName": "₫",
+          "unit": "none",
+          "color": { "mode": "fixed", "fixedColor": "green" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value",
+        "orientation": "auto"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "influxdb", "uid": "influxdb_solar" },
+          "query": "price = float(v: \"${grid_price}\")\n\nfrom(bucket: \"solar_raw\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"solar\" and r._field == \"value\")\n  |> filter(fn: (r) => r.device == \"${device}\")\n  |> filter(fn: (r) =>\n      (r.component == \"pv\" and r.metric == \"energy_today\") or\n      (r.component == \"battery\" and r.metric == \"discharge_today\") or\n      (r.component == \"battery\" and r.metric == \"charge_today\")\n  )\n  |> map(fn: (r) => ({\n      r with\n        _field: \"part\",\n        _value:\n          if r.metric == \"charge_today\" then 0.0 - r._value\n          else r._value\n  }))\n  |> aggregateWindow(every: 1d, fn: last, createEmpty: false)\n  |> group(columns: [\"_field\"])\n  |> sum()\n  |> map(fn: (r) => ({ _time: now(), _value: r._value * price }))\n  |> yield(name: \"Saving\")"
+        }
+      ]
+    },
+    {
+      "id": 15,
+      "title": "Self-sufficiency",
+      "type": "gauge",
+      "gridPos": { "h": 4, "w": 3, "x": 21, "y": 0 },
+      "datasource": { "type": "influxdb", "uid": "influxdb_solar" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "decimals": 0,
+          "displayName": "Self %",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 50 },
+              { "color": "green", "value": 80 }
+            ]
+          },
+          "color": { "mode": "thresholds" }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "orientation": "auto",
+        "sizing": "auto"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "influxdb", "uid": "influxdb_solar" },
+          "query": "from(bucket: \"solar_raw\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"solar\" and r._field == \"value\")\n  |> filter(fn: (r) => r.device == \"${device}\")\n  |> filter(fn: (r) =>\n      (r.component == \"house\" and r.metric == \"energy_today\") or\n      (r.component == \"grid\" and r.metric == \"buy_today\")\n  )\n  |> map(fn: (r) => ({\n      r with _field: if r.component == \"house\" then \"house\" else \"buy\"\n  }))\n  |> aggregateWindow(every: 1d, fn: last, createEmpty: false)\n  |> group(columns: [\"_field\"])\n  |> sum()\n  |> map(fn: (r) => ({ _time: now(), _field: r._field, _value: r._value }))\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> map(fn: (r) => {\n      h = if exists r.house then float(v: r.house) else 0.0\n      b = if exists r.buy then float(v: r.buy) else 0.0\n      raw = if h > 0.0 then (h - b) / h * 100.0 else 0.0\n      pct = if raw < 0.0 then 0.0 else raw\n      return { _time: r._time, _field: \"Self\", _value: pct }\n  })"
+        }
+      ]
+    },
+    {
+      "id": 20,
+      "title": "Electricity",
+      "description": "Daily totals. Charge is negative.",
+      "type": "barchart",
+      "gridPos": { "h": 11, "w": 16, "x": 0, "y": 4 },
+      "datasource": { "type": "influxdb", "uid": "influxdb_solar" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "kWh",
+          "decimals": 2,
+          "displayName": "${__field.name}",
+          "custom": {
+            "fillOpacity": 90,
+            "lineWidth": 1,
+            "gradientMode": "none",
+            "axisCenteredZero": true
+          },
+          "color": { "mode": "palette-classic" }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Solar" },
+            "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "orange" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Grid" },
+            "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "blue" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Battery" },
+            "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "green" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Charge" },
+            "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "#E91E8E" } }]
+          }
+        ]
+      },
+      "options": {
+        "orientation": "vertical",
+        "stacking": "normal",
+        "showValue": "auto",
+        "barWidth": 0.9,
+        "groupWidth": 0.8,
+        "xTickLabelRotation": -45,
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true, "calcs": ["sum"] },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "influxdb", "uid": "influxdb_solar" },
+          "query": "from(bucket: \"solar_raw\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"solar\" and r._field == \"value\")\n  |> filter(fn: (r) => r.device == \"${device}\")\n  |> filter(fn: (r) =>\n      (r.component == \"pv\" and r.metric == \"energy_today\") or\n      (r.component == \"grid\" and r.metric == \"buy_today\") or\n      (r.component == \"battery\" and r.metric == \"discharge_today\") or\n      (r.component == \"battery\" and r.metric == \"charge_today\")\n  )\n  |> map(fn: (r) => ({\n      r with _field:\n        if r.component == \"pv\" then \"Solar\"\n        else if r.metric == \"buy_today\" then \"Grid\"\n        else if r.metric == \"discharge_today\" then \"Battery\"\n        else \"Charge\"\n  }))\n  |> aggregateWindow(every: 1d, fn: last, createEmpty: false)\n  |> map(fn: (r) => ({\n      r with _value: if r._field == \"Charge\" then 0.0 - r._value else r._value\n  }))\n  |> yield(name: \"energy\")"
+        }
+      ]
+    },
+    {
+      "id": 21,
+      "title": "Energy distribution",
+      "type": "bargauge",
+      "gridPos": { "h": 11, "w": 8, "x": 16, "y": 4 },
+      "datasource": { "type": "influxdb", "uid": "influxdb_solar" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "kWh",
+          "decimals": 1,
+          "displayName": "${__field.labels._field}",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "blue", "value": null },
+              { "color": "green", "value": 5 },
+              { "color": "orange", "value": 20 }
+            ]
+          },
+          "color": { "mode": "palette-classic" }
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "gradient",
+        "showUnfilled": true,
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "namePlacement": "auto",
+        "sizing": "auto"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "influxdb", "uid": "influxdb_solar" },
+          "query": "from(bucket: \"solar_raw\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"solar\" and r._field == \"value\")\n  |> filter(fn: (r) => r.device == \"${device}\")\n  |> filter(fn: (r) =>\n      (r.component == \"house\" and r.metric == \"energy_today\") or\n      (r.component == \"pv\" and r.metric == \"energy_today\") or\n      (r.component == \"grid\" and r.metric == \"buy_today\") or\n      (r.component == \"grid\" and r.metric == \"sell_today\") or\n      (r.component == \"battery\" and r.metric == \"charge_today\") or\n      (r.component == \"battery\" and r.metric == \"discharge_today\")\n  )\n  |> map(fn: (r) => ({\n      r with _field:\n        if r.component == \"house\" then \"Home\"\n        else if r.component == \"pv\" then \"Solar\"\n        else if r.metric == \"buy_today\" then \"Import\"\n        else if r.metric == \"sell_today\" then \"Export\"\n        else if r.metric == \"charge_today\" then \"Charge\"\n        else if r.metric == \"discharge_today\" then \"Discharge\"\n        else r.component\n  }))\n  |> aggregateWindow(every: 1d, fn: last, createEmpty: false)\n  |> group(columns: [\"_field\"])\n  |> sum()\n  |> yield(name: \"dist\")"
+        }
+      ]
+    },
+    {
+      "id": 30,
+      "title": "Solar production",
+      "type": "barchart",
+      "gridPos": { "h": 9, "w": 16, "x": 0, "y": 15 },
+      "datasource": { "type": "influxdb", "uid": "influxdb_solar" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "kWh",
+          "decimals": 2,
+          "displayName": "Solar",
+          "custom": { "fillOpacity": 90, "lineWidth": 1, "gradientMode": "none" },
+          "color": { "mode": "fixed", "fixedColor": "orange" }
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "vertical",
+        "stacking": "none",
+        "showValue": "auto",
+        "barWidth": 0.9,
+        "xTickLabelRotation": -45,
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true, "calcs": ["sum"] },
+        "tooltip": { "mode": "single", "sort": "none" }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "influxdb", "uid": "influxdb_solar" },
+          "query": "from(bucket: \"solar_raw\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"solar\" and r._field == \"value\")\n  |> filter(fn: (r) => r.device == \"${device}\")\n  |> filter(fn: (r) => r.component == \"pv\" and r.metric == \"energy_today\")\n  |> map(fn: (r) => ({ r with _field: \"Solar\" }))\n  |> aggregateWindow(every: 1d, fn: last, createEmpty: false)\n  |> yield(name: \"solar\")"
+        }
+      ]
+    },
+    {
+      "id": 31,
+      "title": "Battery SOC",
+      "type": "gauge",
+      "gridPos": { "h": 9, "w": 8, "x": 16, "y": 15 },
+      "datasource": { "type": "influxdb", "uid": "influxdb_solar" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "displayName": "SOC",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 20 },
+              { "color": "green", "value": 40 }
+            ]
+          },
+          "color": { "mode": "thresholds" }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "orientation": "auto",
+        "sizing": "auto"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "influxdb", "uid": "influxdb_solar" },
+          "query": "from(bucket: \"solar_raw\")\n  |> range(start: -15m)\n  |> filter(fn: (r) => r._measurement == \"solar\" and r._field == \"value\")\n  |> filter(fn: (r) => r.device == \"${device}\")\n  |> filter(fn: (r) => r.component == \"battery\" and r.metric == \"soc\")\n  |> last()\n  |> map(fn: (r) => ({ r with _field: \"SOC\" }))"
+        }
+      ]
+    },
+    {
+      "id": 40,
+      "title": "Totals",
+      "type": "table",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 24 },
+      "datasource": { "type": "influxdb", "uid": "influxdb_solar" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "filterable": false,
+            "inspect": false
+          },
+          "decimals": 2
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Energy (kWh)" },
+            "properties": [
+              { "id": "unit", "value": "kWh" },
+              { "id": "custom.width", "value": 160 }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Source" },
+            "properties": [{ "id": "custom.width", "value": 200 }]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": true,
+          "reducer": ["sum"],
+          "fields": ["Energy (kWh)"]
+        },
+        "sortBy": [{ "displayName": "Source", "desc": false }]
+      },
+      "transformations": [
+        {
+          "id": "merge",
+          "options": {}
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "_time": true,
+              "_start": true,
+              "_stop": true,
+              "_measurement": true,
+              "result": true,
+              "table": true,
+              "device": true,
+              "component": true,
+              "metric": true,
+              "host": true
+            },
+            "renameByName": {
+              "Source": "Source",
+              "Energy": "Energy (kWh)",
+              "_field": "Source",
+              "_value": "Energy (kWh)"
+            },
+            "indexByName": {
+              "Source": 0,
+              "Energy (kWh)": 1
+            }
+          }
+        }
+      ],
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "influxdb", "uid": "influxdb_solar" },
+          "query": "from(bucket: \"solar_raw\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"solar\" and r._field == \"value\")\n  |> filter(fn: (r) => r.device == \"${device}\")\n  |> filter(fn: (r) =>\n      (r.component == \"pv\" and r.metric == \"energy_today\") or\n      (r.component == \"house\" and r.metric == \"energy_today\") or\n      (r.component == \"grid\" and r.metric == \"buy_today\") or\n      (r.component == \"grid\" and r.metric == \"sell_today\") or\n      (r.component == \"battery\" and r.metric == \"charge_today\") or\n      (r.component == \"battery\" and r.metric == \"discharge_today\")\n  )\n  |> map(fn: (r) => ({\n      r with _field:\n        if r.component == \"house\" then \"Home\"\n        else if r.component == \"pv\" then \"Solar\"\n        else if r.metric == \"buy_today\" then \"Import\"\n        else if r.metric == \"sell_today\" then \"Export\"\n        else if r.metric == \"charge_today\" then \"Charge\"\n        else if r.metric == \"discharge_today\" then \"Discharge\"\n        else r.component\n  }))\n  |> aggregateWindow(every: 1d, fn: last, createEmpty: false)\n  |> group(columns: [\"_field\"])\n  |> sum()\n  |> map(fn: (r) => ({ Source: r._field, Energy: r._value }))\n  |> group()\n  |> sort(columns: [\"Source\"])",
+          "resultFormat": "table"
+        }
+      ]
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "tags": ["solar", "energy"],
+  "templating": {
+    "list": [
+      {
+        "name": "device",
+        "type": "custom",
+        "label": "Inverter",
+        "query": "Deye SG06 : sg06, ivt-2 : ivt-2",
+        "current": { "selected": true, "text": "Deye SG06", "value": "sg06" },
+        "options": [
+          { "selected": true, "text": "Deye SG06", "value": "sg06" },
+          { "selected": false, "text": "ivt-2", "value": "ivt-2" }
+        ],
+        "multi": false,
+        "includeAll": false
+      },
+      {
+        "name": "grid_price",
+        "type": "textbox",
+        "label": "Price ₫/kWh",
+        "query": "2050",
+        "current": { "selected": true, "text": "2050", "value": "2050" },
+        "options": [{ "selected": true, "text": "2050", "value": "2050" }]
+      }
+    ]
+  },
+  "time": { "from": "now/d", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Solar Energy",
+  "uid": "solar-energy",
+  "version": 6,
+  "weekStart": ""
+}

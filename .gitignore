@@ -1,0 +1,16 @@
+# Local Docker volumes / secrets — do not commit
+influxdb/data/
+influxdb/config/
+grafana/data/
+mosquitto/data/
+mosquitto/log/
+backups/
+deyecloud-data/
+.env
+.env.local
+*.log
+scripts/tmp-*
+__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db
