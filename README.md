@@ -49,7 +49,7 @@ Deye SG06 (RS485)
 ```
 
 - **Mosquitto** is optional in [`docker-compose.yml`](docker-compose.yml) (commented out by default) so an existing broker on `:1883` (HA / ESP32) is not conflicted. Uncomment only if you need Compose to start the broker.
-- RS485 → IRIV IOC MQTT Gateway → Mosquitto: see [`deye-sg06-rs485-monitor/iriv`](https://github.com/vantechcorner/deye-sg06-rs485-monitor/tree/main/iriv).
+- RS485 → IRIV IOC MQTT Gateway → Mosquitto: see [`iriv-ioc-mqtt-gateway`](https://github.com/vantechcorner/deye-sg06-inverter-rs485-monitor/tree/main/iriv-ioc-mqtt-gateway).
 
 ---
 

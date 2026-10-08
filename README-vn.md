@@ -49,7 +49,7 @@ Deye SG06 (RS485)
 ```
 
 - **Mosquitto** có trong [`docker-compose.yml`](docker-compose.yml) nhưng **đang comment** (mặc định tắt) để tránh xung đột cổng 1883 với broker sẵn có (HA / ESP32). Bỏ comment chỉ khi bạn muốn Compose tự chạy broker.
-- Hướng dẫn RS485 → IRIV IOC MQTT Gateway → Mosquitto: [`deye-sg06-rs485-monitor/iriv`](https://github.com/vantechcorner/deye-sg06-rs485-monitor/tree/main/iriv).
+- Hướng dẫn RS485 → IRIV IOC MQTT Gateway → Mosquitto: [`iriv-ioc-mqtt-gateway`](https://github.com/vantechcorner/deye-sg06-inverter-rs485-monitor/tree/main/iriv-ioc-mqtt-gateway).
 
 ---
 

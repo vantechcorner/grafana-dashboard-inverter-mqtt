@@ -32,7 +32,7 @@ default**. Uncomment only if nothing else already binds `:1883`. Telegraf
 subscribes via `tcp://192.168.3.249:1883`.
 
 RS485 → IRIV IOC MQTT Gateway → Mosquitto setup:
-https://github.com/vantechcorner/deye-sg06-rs485-monitor/tree/main/iriv
+https://github.com/vantechcorner/deye-sg06-inverter-rs485-monitor/tree/main/iriv-ioc-mqtt-gateway
 
 
 | Piece       | Role                                                         |
@@ -83,10 +83,11 @@ Grafana variable shows **Deye SG06** for tag `sg06`.
 
 Energy dashboards use `**solar_1d` for completed days** and `**solar_raw` for today**.
 
-**Downsample note:** `downsample_solar_1d` runs at **~00:10 ICT** (`every: 1d, offset: 17h10m`)
-and writes the previous ICT day’s EOD `*_today` via `last()`. Do **not** aggregate
-`*_today` on UTC day boundaries — that captures post-midnight reset (~0) and corrupts
-history. Repair a day from raw: `python3 scripts/repair-solar-1d-day.py --day YYYY-MM-DD`.
+**Downsample note:** `downsample_solar_1d` runs at **00:10 ICT** via cron `10 17 * * *`
+(UTC). It takes `last()` of `*_today` over the **previous ICT calendar day**, then pins
+`_time` to that day’s EOD. Do **not** use UTC day windows or `every/offset` alone —
+a previous `every: 1d, offset: 17h10m` task stayed active but never produced runs after
+recreate. Repair a day: `python3 scripts/repair-solar-1d-day.py --day YYYY-MM-DD`.
 
 ### Components
 

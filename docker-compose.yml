@@ -6,7 +6,7 @@ services:
   # and point Telegraf at that broker instead.
   #
   # RS485 inverter → IRIV IOC MQTT Gateway → Mosquitto setup guide:
-  #   https://github.com/vantechcorner/deye-sg06-rs485-monitor/tree/main/iriv
+  #   https://github.com/vantechcorner/deye-sg06-inverter-rs485-monitor/tree/main/iriv-ioc-mqtt-gateway
   # ---------------------------------------------------------------------------
   # mosquitto:
   #   image: eclipse-mosquitto:2

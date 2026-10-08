@@ -11,6 +11,11 @@ influx_cmd() {
   influx "$@" --host "$HOST" --token "$TOKEN" --org "$ORG"
 }
 
+# task delete does not accept --org
+delete_task() {
+  influx task delete --id "$1" --host "$HOST" --token "$TOKEN"
+}
+
 ensure_bucket() {
   local name="$1"
   local retention="$2"
@@ -33,7 +38,7 @@ for name in downsample_solar_1h downsample_solar_1d; do
   while read -r tid _; do
     [[ -n "$tid" ]] || continue
     echo "deleting task $name id=$tid"
-    influx_cmd task delete --id "$tid" || true
+    delete_task "$tid" || true
   done < <(influx_cmd task list --hide-headers 2>/dev/null | awk -v n="$name" '$2==n {print $1}')
 done
 
