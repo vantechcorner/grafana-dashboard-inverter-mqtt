@@ -6,7 +6,7 @@ Operational notes for the solar MQTT → Influx → Grafana stack on
 publish the MQTT contract below.
 Requires **Docker + Compose** on the host.
 
-Project overview: `[README.md](README.md)` (English) · `[README-vn.md](README-vn.md)` (tiếng Việt).
+Project overview: [README.md](README.md) (English) · [README-vn.md](README-vn.md) (tiếng Việt).
 
 MQTT topic contract is **unchanged** so Home Assistant and ESP32 keep working.
 Secrets: use `.env` (never commit) — see `.env.example`.
@@ -124,10 +124,10 @@ PV + buy + discharge − sell − charge
 
 ## 4. Deploy / migrate on the Pi
 
-Copy this repo over `~/solar_monitoring` (or rsync), then:
+Clone or copy this repo, then (example path matches the GitHub folder name):
 
 ```bash
-cd ~/solar_monitoring
+cd ~/grafana-dashboard-inverter-mqtt
 sudo chown -R 472:472 ./grafana/data   # if Grafana was restart-looping
 chmod +x scripts/migrate-cleanup.sh influxdb/scripts/setup-buckets.sh
 ./scripts/migrate-cleanup.sh

@@ -143,7 +143,7 @@
       "fieldConfig": {
         "defaults": {
           "unit": "kWh",
-          "decimals": 1,
+          "decimals": 2,
           "displayName": "Solar",
           "color": {
             "mode": "fixed",
@@ -382,7 +382,7 @@
         "defaults": {
           "decimals": 0,
           "displayName": "₫",
-          "unit": "none",
+          "unit": "locale",
           "color": {
             "mode": "fixed",
             "fixedColor": "red"
@@ -442,7 +442,7 @@
         "defaults": {
           "decimals": 0,
           "displayName": "₫",
-          "unit": "none",
+          "unit": "locale",
           "color": {
             "mode": "fixed",
             "fixedColor": "green"
@@ -584,7 +584,7 @@
       },
       "options": {
         "editorMode": "code",
-        "getOption": "const toArray = (field) => {\n  if (!field || field.values == null) {\n    return [];\n  }\n  const v = field.values.buffer || field.values;\n  const n = typeof v.length === 'number' ? v.length : 0;\n  const out = [];\n  for (let i = 0; i < n; i += 1) {\n    out.push(typeof v.get === 'function' ? v.get(i) : v[i]);\n  }\n  return out;\n};\n\nconst seriesList = (context.panel.data && context.panel.data.series) || [];\nconst series = seriesList[0];\nif (!series) {\n  return {\n    backgroundColor: 'transparent',\n    title: {\n      text: 'No data',\n      left: 'center',\n      top: 'middle',\n      textStyle: { color: '#888', fontSize: 14 },\n    },\n  };\n}\n\nconst day = toArray(series.fields.find((f) => f.name === 'Day'));\nconst production = toArray(series.fields.find((f) => f.name === 'Production'));\nconst consumption = toArray(series.fields.find((f) => f.name === 'Consumption'));\n\nreturn {\n  backgroundColor: 'transparent',\n  tooltip: {\n    trigger: 'axis',\n    axisPointer: { type: 'shadow' },\n  },\n  legend: {\n    data: ['Production', 'Consumption'],\n    bottom: 0,\n    textStyle: { color: '#ccccdc' },\n  },\n  grid: {\n    left: 48,\n    right: 24,\n    top: 28,\n    bottom: 48,\n  },\n  xAxis: {\n    type: 'category',\n    data: day,\n    axisLabel: { color: '#9b9b9b' },\n  },\n  yAxis: {\n    type: 'value',\n    name: 'kWh',\n    nameTextStyle: { color: '#9b9b9b' },\n    axisLabel: { color: '#9b9b9b' },\n    splitLine: { lineStyle: { color: 'rgba(120,120,120,0.25)' } },\n  },\n  series: [\n    {\n      name: 'Production',\n      type: 'bar',\n      data: production,\n      barMaxWidth: 28,\n      itemStyle: { color: '#FF9830' },\n    },\n    {\n      name: 'Consumption',\n      type: 'line',\n      data: consumption,\n      symbol: 'circle',\n      symbolSize: 6,\n      lineStyle: { width: 3, color: '#B877D9' },\n      itemStyle: { color: '#B877D9' },\n      z: 3,\n    },\n  ],\n};",
+        "getOption": "const toArray = (field) => {\n  if (!field || field.values == null) {\n    return [];\n  }\n  const v = field.values.buffer || field.values;\n  const n = typeof v.length === 'number' ? v.length : 0;\n  const out = [];\n  for (let i = 0; i < n; i += 1) {\n    out.push(typeof v.get === 'function' ? v.get(i) : v[i]);\n  }\n  return out;\n};\n\nconst seriesList = (context.panel.data && context.panel.data.series) || [];\nconst series = seriesList[0];\nif (!series) {\n  return {\n    backgroundColor: 'transparent',\n    title: {\n      text: 'No data',\n      left: 'center',\n      top: 'middle',\n      textStyle: { color: '#888', fontSize: 14 },\n    },\n  };\n}\n\nconst day = toArray(series.fields.find((f) => f.name === 'Day'));\nconst production = toArray(series.fields.find((f) => f.name === 'Production'));\nconst consumption = toArray(series.fields.find((f) => f.name === 'Consumption'));\n\nreturn {\n  backgroundColor: 'transparent',\n  tooltip: {\n    trigger: 'axis',\n    axisPointer: { type: 'shadow' },\n    valueFormatter: (v) => (v == null || v === '' ? '-' : Number(v).toFixed(2) + ' kWh'),\n  },\n  legend: {\n    data: ['Production', 'Consumption'],\n    bottom: 0,\n    textStyle: { color: '#ccccdc' },\n  },\n  grid: {\n    left: 48,\n    right: 24,\n    top: 28,\n    bottom: 48,\n  },\n  xAxis: {\n    type: 'category',\n    data: day,\n    axisLabel: { color: '#9b9b9b' },\n  },\n  yAxis: {\n    type: 'value',\n    name: 'kWh',\n    nameTextStyle: { color: '#9b9b9b' },\n    axisLabel: { color: '#9b9b9b' },\n    splitLine: { lineStyle: { color: 'rgba(120,120,120,0.25)' } },\n  },\n  series: [\n    {\n      name: 'Production',\n      type: 'bar',\n      data: production,\n      barMaxWidth: 28,\n      itemStyle: { color: '#FF9830' },\n    },\n    {\n      name: 'Consumption',\n      type: 'line',\n      data: consumption,\n      symbol: 'circle',\n      symbolSize: 6,\n      lineStyle: { width: 3, color: '#B877D9' },\n      itemStyle: { color: '#B877D9' },\n      z: 3,\n    },\n  ],\n};",
         "renderer": "canvas",
         "editor": {
           "format": "none"
@@ -1612,6 +1612,6 @@
   "timezone": "Asia/Ho_Chi_Minh",
   "title": "Solar Energy",
   "uid": "solar-energy",
-  "version": 20,
+  "version": 21,
   "weekStart": "monday"
 }

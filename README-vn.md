@@ -10,7 +10,7 @@ Hệ thống theo dõi năng lượng mặt trời: thu thập realtime qua MQTT
 
 **Có thể dùng với** các biến tần RS485 khác (mọi thương hiệu) **miễn là dữ liệu đã được chuyển sang MQTT** theo contract topic/payload bên dưới — repo này **không** nói chuyện RS485 trực tiếp, chỉ consume MQTT.
 
-> English overview: [`README.md`](README.md)
+> English overview: [README.md](README.md)
 
 ---
 
@@ -132,26 +132,45 @@ docker compose up -d
 
 Biến chính: `INFLUX_USERNAME`, `INFLUX_PASSWORD`, `INFLUX_TOKEN`, `GRAFANA_ADMIN_USER`, `GRAFANA_ADMIN_PASSWORD`.
 
-Trên Pi hiện tại: giữ `.env` cạnh `docker-compose.yml` (`~/solar_monitoring/.env`).
+Giữ file `.env` cạnh `docker-compose.yml` trong thư mục đã clone.
 
 ---
 
 ## Deploy nhanh (Pi)
 
-Điều kiện: đã cài Docker Engine + plugin Compose.
+Điều kiện trên Pi: đã cài **Git**, **Docker Engine**, và plugin **Compose**.
+
+Dùng thư mục clone `grafana-dashboard-inverter-mqtt` (trùng tên repo GitHub). Không dùng đường dẫn cá nhân kiểu `~/solar_monitoring` — tên đó chỉ dành cho máy Pi của tác giả.
 
 ```bash
-cd ~/solar_monitoring
-cp .env.example .env   # rồi sửa secrets
+# 1) Clone repo
+cd ~
+git clone https://github.com/vantechcorner/grafana-dashboard-inverter-mqtt.git
+cd ~/grafana-dashboard-inverter-mqtt
+
+# 2) Tạo secrets (không commit .env)
+cp .env.example .env
+nano .env   # điền INFLUX_* và GRAFANA_ADMIN_*
+
+# 3) Chạy stack
 chmod +x scripts/*.sh influxdb/scripts/setup-buckets.sh
 docker compose up -d
-./influxdb/scripts/setup-buckets.sh   # hoặc ./scripts/migrate-cleanup.sh lần đầu
+
+# 4) Tạo bucket + task downsample (lần đầu / sau khi pull cập nhật)
+./influxdb/scripts/setup-buckets.sh
+# Migrate từ layout cũ: ./scripts/migrate-cleanup.sh
 ```
 
-- Grafana: `http://192.168.3.249:3000`
-- Influx: `http://192.168.3.249:8086`
+Sau đó mở:
 
-Backup / restore / Flux cheat sheet / inverter 2: xem [`note.md`](note.md).
+- Grafana: `http://<ip-pi>:3000` (user/password admin lấy từ `.env`)
+- InfluxDB: `http://<ip-pi>:8086`
+
+Trỏ Telegraf tới MQTT broker của bạn (`telegraf/telegraf.conf`). Service Mosquitto trong `docker-compose.yml` đang comment — chỉ bật nếu chưa có broker nào chiếm cổng `1883`.
+
+Hướng dẫn RS485 → IRIV IOC MQTT Gateway: [iriv-ioc-mqtt-gateway](https://github.com/vantechcorner/deye-sg06-inverter-rs485-monitor/tree/main/iriv-ioc-mqtt-gateway).
+
+Backup / restore / Flux cheat sheet / inverter 2: xem [note.md](note.md).
 
 ---
 

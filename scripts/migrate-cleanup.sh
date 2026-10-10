@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# One-shot migration on IRIV Pi Control after copying this repo to ~/solar_monitoring
+# One-shot migration after cloning/copying this repo (e.g. ~/grafana-dashboard-inverter-mqtt)
 # - Creates new buckets + tasks
 # - Removes legacy mqtt_consumer data / solar_data bucket
 # - Restarts stack

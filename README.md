@@ -10,7 +10,7 @@ Solar energy monitoring stack: realtime MQTT ingest, InfluxDB time series, Grafa
 
 **Also compatible with** other RS485 inverters (any brand) **once their data is published as MQTT** in the topic/payload contract below — this repo does not talk RS485 directly; it only consumes MQTT.
 
-> Vietnamese overview: `[README-vn.md](README-vn.md)`
+> Vietnamese overview: [README-vn.md](README-vn.md)
 
 ---
 
@@ -154,7 +154,7 @@ docker compose up -d
 
 Main variables: `INFLUX_USERNAME`, `INFLUX_PASSWORD`, `INFLUX_TOKEN`, `GRAFANA_ADMIN_USER`, `GRAFANA_ADMIN_PASSWORD`.
 
-On the Pi, keep `.env` next to `docker-compose.yml` (`~/solar_monitoring/.env`).
+Keep `.env` next to `docker-compose.yml` in the cloned repo directory.
 
 ---
 
@@ -162,20 +162,39 @@ On the Pi, keep `.env` next to `docker-compose.yml` (`~/solar_monitoring/.env`).
 
 ## Quick deploy (Pi)
 
-Prerequisites: Docker Engine + Compose plugin already installed.
+Prerequisites on the Pi: **Git**, **Docker Engine**, and the **Compose** plugin.
+
+Use the cloned folder name `grafana-dashboard-inverter-mqtt` (same as the GitHub repo). Do not use a personal path such as `~/solar_monitoring` — that name is only for the author’s existing Pi install.
 
 ```bash
-cd ~/solar_monitoring
-cp .env.example .env   # then edit secrets
+# 1) Clone this repository
+cd ~
+git clone https://github.com/vantechcorner/grafana-dashboard-inverter-mqtt.git
+cd ~/grafana-dashboard-inverter-mqtt
+
+# 2) Create secrets (never commit .env)
+cp .env.example .env
+nano .env   # set INFLUX_* and GRAFANA_ADMIN_*
+
+# 3) Start the stack
 chmod +x scripts/*.sh influxdb/scripts/setup-buckets.sh
 docker compose up -d
-./influxdb/scripts/setup-buckets.sh   # or ./scripts/migrate-cleanup.sh on first migrate
+
+# 4) Create buckets + downsample tasks (first time / after pull updates)
+./influxdb/scripts/setup-buckets.sh
+# Fresh migrate from an older layout: ./scripts/migrate-cleanup.sh
 ```
 
-- Grafana: `http://192.168.3.249:3000`
-- Influx: `http://192.168.3.249:8086`
+Then open:
 
-Backup / restore / Flux cheat sheet / second inverter: see `[note.md](note.md)`.
+- Grafana: `http://<pi-ip>:3000` (default admin user/password from `.env`)
+- InfluxDB: `http://<pi-ip>:8086`
+
+Point Telegraf at your MQTT broker (see `telegraf/telegraf.conf`). Optional Mosquitto service is commented in `docker-compose.yml` — enable it only if nothing else already uses port `1883`.
+
+RS485 → IRIV IOC MQTT Gateway setup: [iriv-ioc-mqtt-gateway](https://github.com/vantechcorner/deye-sg06-inverter-rs485-monitor/tree/main/iriv-ioc-mqtt-gateway).
+
+Backup / restore / Flux cheat sheet / second inverter: see [note.md](note.md).
 
 ---
 
