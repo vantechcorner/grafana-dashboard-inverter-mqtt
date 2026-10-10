@@ -2,7 +2,11 @@
 
 Hệ thống theo dõi năng lượng mặt trời: thu thập realtime qua MQTT, lưu time-series InfluxDB, hiển thị Grafana; có thể **bù lịch sử** từ báo cáo Excel đám mây (vd. DeyeCloud).
 
+![Solar Overview dashboard](img/solar-overview-2026-10-09-08_35_33.png)
+
 **Đã thử nghiệm với:** biến tần Deye **SUN-6K-SG06LP1** (hybrid, tag `sg06` / nhãn “Deye SG06” trên dashboard) trên **IRIV Pi Control** (`192.168.3.249`).
+
+![Deye SUN-6K-SG06LP1 với IRIV Pi Control](img/deye-sun-6k-sg06lp1-setup-4-iriv.jpg)
 
 **Có thể dùng với** các biến tần RS485 khác (mọi thương hiệu) **miễn là dữ liệu đã được chuyển sang MQTT** theo contract topic/payload bên dưới — repo này **không** nói chuyện RS485 trực tiếp, chỉ consume MQTT.
 
@@ -86,11 +90,23 @@ Ví dụ: `iriv/ivt/battery/power` → `device=sg06, component=battery, metric=p
 
 Energy lịch sử: **`solar_1d` + `solar_raw` (hôm nay)**. Không `sum()` thô các mẫu `*_today` trong cả tháng (sẽ nhân đôi).
 
+![Solar Energy — production vs consumption dài hạn](img/energy-overview-long-term-2026-10-09-08_37_22.png)
+
+![Solar Live V/A/P](img/live-vap-2026-10-09-08_37_22.png)
+
 ---
 
 ## Backfill DeyeCloud
 
-Thư mục `deyecloud-data/*.xlsx` — export “theo tháng” nhưng **mỗi dòng là 1 ngày** (Production, Buy/Sell, Charge/Discharge, Consumption).
+Nếu bạn setup Grafana + InfluxDB **sau** khi biến tần đã chạy (vài tuần / vài tháng), MQTT chỉ có dữ liệu từ lúc bật Telegraf. Lịch sử kWh ngày trước đó vẫn nằm trên cloud nhà sản xuất (vd. **DeyeCloud**). Export báo cáo đó rồi import vào đây để dashboard Solar Energy / DeyeCloud có timeline liền mạch.
+
+**Cách làm**
+
+1. Trên DeyeCloud (hoặc tương đương), export báo cáo năng lượng **theo ngày** dạng Excel cho các tháng cần bù (thường ghi là export tháng — mỗi dòng vẫn là **1 ngày**: Production, Buy/Sell, Charge/Discharge, Consumption).
+2. Copy các file `.xlsx` vào `deyecloud-data/` trên máy host (thư mục này đã gitignore).
+3. Trên Pi (hoặc host chạy stack), **backup Influx trước**, chạy dry-run, rồi import thật:
+
+![Solar DeyeCloud dashboard](img/deyecloud-2026-10-09-08_37_22.png)
 
 ```bash
 ./scripts/backup-influxdb.sh ./backups/pre-import-$(date +%F)
@@ -98,7 +114,7 @@ python3 scripts/import-deyecloud-energy.py --dry-run          # hoặc qua docke
 python3 scripts/import-deyecloud-energy.py --i-have-backup
 ```
 
-Chỉ điền **kWh daily** vào `solar_1d`. Không khôi phục được đường cong power/SOC.
+Chỉ ghi **kWh daily** vào `solar_1d` (lấp ngày thiếu; ngày đã có từ MQTT giữ nguyên). Không khôi phục được đường cong power/SOC từ Excel.
 
 Chi tiết mapping & verify: [`note.md`](note.md) §11.
 
